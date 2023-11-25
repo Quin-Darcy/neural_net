@@ -61,3 +61,18 @@ pub fn flat_matrix_vector_mult(flat_matrix: &[f32], v: &[f32], columns: usize, r
 
     result
 }
+
+// This returns a flat matrix
+pub fn outer_product(v1: &[f32], v2: &[f32]) -> Vec<f32> {
+    let v1_len = v1.len();
+    let v2_len = v2.len();
+    let mut result = Vec::with_capacity(v1_len * v2_len);
+
+    for &a in v2.iter() {
+        for &b in v1.iter() {
+            result.push(a * b);
+        }
+    }
+
+    result
+}
