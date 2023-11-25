@@ -64,8 +64,8 @@ impl Layer {
         }
         
         // Set the pre-activation values (weighted_sums) and store the output for later reference
-        self.weighted_sums = pre_activations.clone();
-        self.output = sigmoid_vec(&pre_activations);
+        self.weighted_sums = pre_activations;
+        self.output = sigmoid_vec(&self.weighted_sums);
 
         return self.output.clone();
     }
