@@ -5,7 +5,7 @@ use crate::experience::{Experience, self};
 use crate::utility::get_batches;
 
 
-struct NeuralNet {
+pub struct NeuralNet {
     num_layers: usize,
     layer_layout: Vec<usize>,
     layers: Vec<Layer>,
@@ -43,11 +43,14 @@ impl NeuralNet {
         // Train the neural net for the specified number of epochs
         let training_data_len = training_data.len();
         let mut cost_sum = 0.0;
-        for _ in 0..epochs {
+        for i in 0..epochs {
+            println!("EPOCH {}", i);
             for batch in batches.iter_mut() {
                 cost_sum += self.train_on_batch(batch);
             }
             self.average_cost = cost_sum / training_data_len as f32;
+            println!("    Average Cost: {}", self.average_cost);
+            cost_sum = 0.0;
         }
     }
 
@@ -83,8 +86,16 @@ impl NeuralNet {
             let average_biases_gradients = total_biases_gradients[i-1].iter().map(|sum| sum / num_experiences as f32).collect::<Vec<f32>>();
             let average_weights_gradients = total_weights_gradients[i-1].iter().map(|sum| sum / num_experiences as f32).collect::<Vec<f32>>();
 
+            // Scale gradients by the learning rate
+            let scaled_biases_gradients = average_biases_gradients.iter()
+                .map(|&grad| grad * self.learning_rate)
+                .collect::<Vec<f32>>();
+            let scaled_weights_gradients = average_weights_gradients.iter()
+                .map(|&grad| grad * self.learning_rate)
+                .collect::<Vec<f32>>();
+
             // Update the weights and biases of layer i using the averaged gradients of the ith layer's weights and biases
-            self.layers[i].update(&average_weights_gradients, &average_biases_gradients);
+            self.layers[i].update(&scaled_weights_gradients, &scaled_biases_gradients);
         }
 
         batch_loss
@@ -92,7 +103,7 @@ impl NeuralNet {
 
     fn feed_forward(&mut self, data: &mut Experience) -> Vec<f32> {
         // Convert the Experience's 'state' member into a Vec<f32> so that it can be consumed by the neural net
-        let input = data.convert_to_f32_vec();
+        let input = data.convert_state_to_f32_vec();
         let mut layer_output: Vec<f32> = Vec::new();
         let mut nn_output: Vec<f32> = Vec::with_capacity(self.layer_layout[self.num_layers-1]);
 
@@ -118,7 +129,7 @@ impl NeuralNet {
         let temp_weights: Vec<f32> = vec![0.0; 1];
         let temp_error_terms: Vec<f32> = vec![0.0; 1];
 
-        let target = &target_experience.convert_to_f32_vec();
+        let target = &target_experience.convert_new_state_to_f32_vec();
 
         for i in (1..self.num_layers).rev() {
             if i == self.num_layers-1 {
@@ -144,7 +155,7 @@ impl NeuralNet {
     }
 
     fn cost(&self, target_experience: &mut Experience, prediction: &[f32]) -> f32 {
-        let target = target_experience.convert_to_f32_vec();
+        let target = target_experience.convert_new_state_to_f32_vec();
 
         target.iter()
             .zip(prediction.iter())

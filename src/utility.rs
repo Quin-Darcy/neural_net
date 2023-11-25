@@ -50,6 +50,7 @@ pub fn hadamard_prod_vec(vec1: &[f32], vec2: &[f32]) -> Vec<f32> {
 }
 
 pub fn flat_matrix_vector_mult(flat_matrix: &[f32], v: &[f32], columns: usize, rows: usize) -> Vec<f32> {
+    println!("flat_matrix: {:?}, v: {:?}, columns: {}, rows: {}", flat_matrix, v, columns, rows);
     let mut result = Vec::with_capacity(rows);
 
     for i in 0..columns {
