@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use crate::utility::{sigmoid_vec, sub_vec, hadamard_prod_vec, sigmoid_derivative_vec};
+use crate::utility::{sigmoid_vec, sub_vec, hadamard_prod_vec, sigmoid_derivative_vec, flat_matrix_vector_mult};
 use crate::constants::NUM_LAYERS;
 
 #[derive(Debug)]
@@ -73,15 +73,23 @@ impl Layer {
 
         // Error terms are different for the last layer
         errors = if self.layer_index == NUM_LAYERS - 1 {
-            self.error_terms = hadamard_prod_vec(
+            hadamard_prod_vec(
                 &sub_vec(&self.output, &target), 
                 &sigmoid_derivative_vec(&self.weighted_sums)
             )
         } else {
-            
-        }
+            hadamard_prod_vec(
+                &flat_matrix_vector_mult(
+                    &next_layer_weights, 
+                    &next_layer_error_terms, 
+                    self.num_neurons, 
+                    next_layer_error_terms.len()
+                ), 
+                &sigmoid_derivative_vec(&self.weighted_sums)
+            )
+        };
 
         self.error_terms = errors.clone();
-        errors;
+        errors
     }
 }
