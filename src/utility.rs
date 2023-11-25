@@ -1,3 +1,6 @@
+use crate::experience::Experience;
+
+
 // Single f32 input sigmoid function
 fn sigmoid(x: f32) -> f32 {
     1.0 / (1.0 + (-x).exp())
@@ -75,4 +78,27 @@ pub fn outer_product(v1: &[f32], v2: &[f32]) -> Vec<f32> {
     }
 
     result
+}
+
+pub fn get_batches(training_data: &[Experience], num_batches: usize) -> Vec<Vec<Experience>> {
+    let mut batches: Vec<Vec<Experience>> = Vec::with_capacity(num_batches);
+
+    if training_data.len() % num_batches == 0 {
+        // If the number of training data is divisible by the number of batches, 
+        // then each batch will have the same number of training data
+        let batch_size = training_data.len() / num_batches;
+        for i in 0..num_batches {
+            batches.push(training_data[i*batch_size..(i+1)*batch_size].to_vec());
+        }
+    } else {
+        // If the number of training data is not divisible by the number of batches, 
+        // then each batch will have the same number of training data except for the last batch
+        let batch_size = training_data.len() / num_batches;
+        for i in 0..num_batches-1 {
+            batches.push(training_data[i*batch_size..(i+1)*batch_size].to_vec());
+        }
+        batches.push(training_data[(num_batches-1)*batch_size..].to_vec());
+    }  
+
+    batches
 }

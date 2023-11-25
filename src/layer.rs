@@ -9,12 +9,11 @@ pub struct Layer {
     num_inputs: usize,
     layer_index: usize,
 
-    weights: Vec<f32>,
-    biases: Vec<f32>,
+    pub weights: Vec<f32>,
+    pub biases: Vec<f32>,
     weighted_sums: Vec<f32>,
-    output: Vec<f32>,
+    pub output: Vec<f32>,
     neuron_errors: Vec<f32>,
-    weight_gradients: Vec<f32>,
 }
 
 impl Layer {
@@ -39,9 +38,9 @@ impl Layer {
         let weighted_sums = vec![0.0; num_neurons];
         let output = vec![0.0; num_neurons];
         let neuron_errors = vec![0.0; num_neurons];
-        let weight_gradients = vec![0.0; num_neurons * num_inputs];
 
-        Self { num_neurons, num_inputs, layer_index, weights, biases, weighted_sums, output, neuron_errors, weight_gradients }
+
+        Self { num_neurons, num_inputs, layer_index, weights, biases, weighted_sums, output, neuron_errors }
     }
 
     // Feed the input of the previous layer into the current layer and return its output
@@ -104,7 +103,6 @@ impl Layer {
     // the gradient for each weight in this layer
     pub fn calculate_weight_gradients(&mut self, input: &[f32]) -> Vec<f32> {
         let weight_gradients = outer_product(input, &self.neuron_errors);
-        self.weight_gradients = weight_gradients.clone();
         weight_gradients
     }
 
