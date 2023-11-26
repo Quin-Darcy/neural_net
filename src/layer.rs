@@ -2,6 +2,7 @@ use rand::Rng;
 
 use crate::utility::{sigmoid_vec, sub_vec, hadamard_prod_vec, sigmoid_derivative_vec, flat_matrix_vector_mult, outer_product};
 use crate::constants::NUM_LAYERS;
+use crate::errors::NeuralNetError;
 
 #[derive(Debug)]
 pub struct Layer {
@@ -44,7 +45,16 @@ impl Layer {
     }
 
     // Feed the input of the previous layer into the current layer and return its output
-    pub fn feed_forward(&mut self, input: &Vec<f32>) -> Vec<f32> {
+    pub fn feed_forward(&mut self, input: &Vec<f32>) -> Result<Vec<f32>, NeuralNetError> {
+        // Check for mismatched input lengths
+        if input.len() != self.num_inputs {
+            return Err(NeuralNetError::InvalidDimensions{
+                message: "feed_forward received input with invalid length".to_string(),
+                line: line!(),
+                file: file!().to_string(),
+            });
+        }
+
         let mut pre_activations = Vec::with_capacity(self.num_neurons);
 
         // Calculate weighted sum neuron by neuron
@@ -64,23 +74,36 @@ impl Layer {
         
         // Set the pre-activation values (weighted_sums) and store the output for later reference
         self.weighted_sums = pre_activations;
-        self.output = sigmoid_vec(&self.weighted_sums);
+        self.output = sigmoid_vec(&self.weighted_sums)?;
 
-        return self.output.clone();
+        return Ok(self.output.clone());
     }
 
     // This calculates the error in each neuron defined by the partial derivative of the cost function wrt. the weighted sum for that neuron
     // This gives back a vector of floats representing the magnitude of contribution each neuron had to the error in the cost function
     // It takes in the weights and neuron errors from the layer in front of it (closer to the output layer)
-    pub fn calculate_neuron_errors(&mut self, target: &[f32], next_layer_weights: &[f32], next_layer_error_terms: &[f32]) -> Vec<f32> {
-        let mut errors = Vec::with_capacity(self.num_neurons);
+    pub fn calculate_neuron_errors(
+        &mut self, 
+        target: &[f32], 
+        next_layer_weights: &[f32], 
+        next_layer_error_terms: &[f32]
+    ) -> Result<Vec<f32>, NeuralNetError> {
+
+        // Check if target, weights, or error terms are empty
+        if target.is_empty() || next_layer_weights.is_empty() || next_layer_error_terms.is_empty() {
+            return Err(NeuralNetError::EmptyVector {
+                message: "calculate_neuron_errors received empty arguments".to_string(),
+                line: line!(),
+                file: file!().to_string(),
+            })
+        }
 
         // Error terms are different for the last layer
-        errors = if self.layer_index == NUM_LAYERS - 1 {
+        let errors = if self.layer_index == NUM_LAYERS - 1 {
             hadamard_prod_vec(
-                &sub_vec(&self.output, &target), 
-                &sigmoid_derivative_vec(&self.weighted_sums)
-            )
+                &sub_vec(&self.output, &target)?, 
+                &sigmoid_derivative_vec(&self.weighted_sums)?
+            )?
         } else {
             hadamard_prod_vec(
                 // Performs matrix vector multiplication with transpose of next layer's weight matrix and the next layer's error terms
@@ -88,22 +111,49 @@ impl Layer {
                     &next_layer_weights, 
                     &next_layer_error_terms, 
                     self.num_neurons, 
-                    next_layer_error_terms.len()
-                ), 
-                &sigmoid_derivative_vec(&self.weighted_sums)
-            )
+                    next_layer_error_terms.len())?, 
+                &sigmoid_derivative_vec(&self.weighted_sums)?
+            )?
         };
 
+        // Validate that errors length is equal to num neurons
+        if errors.len() != self.num_neurons {
+            return Err(NeuralNetError::InvalidReturnLength {
+                message: "Calculation of neuron errors returned incorrect number of values".to_string(),
+                line: line!(),
+                file: file!().to_string(),
+            })
+        }
+
         self.neuron_errors = errors.clone();
-        errors
+        Ok(errors)
     }
 
     // This method takes in the activation vector (output) from the previous layer (layer closer to the input layer) and computes the 
     // outer product between it and the vector of neuron errors from this layer. The result is a matrix in which each term corresponde to
     // the gradient for each weight in this layer
-    pub fn calculate_weight_gradients(&mut self, input: &[f32]) -> Vec<f32> {
-        let weight_gradients = outer_product(input, &self.neuron_errors);
-        weight_gradients
+    pub fn calculate_weight_gradients(&mut self, input: &[f32]) -> Result<Vec<f32>, NeuralNetError> {
+        // Check if input is empty
+        if input.is_empty() {
+            return Err(NeuralNetError::EmptyVector {
+                message: "calculate_weight_gradients received empty input vector".to_string(),
+                line: line!(),
+                file: file!().to_string(),
+            })
+        }
+
+        let weight_gradients = outer_product(input, &self.neuron_errors)?;
+
+        // Validate the length of the returned gradients
+        if weight_gradients.len() != self.weights.len() {
+            return Err(NeuralNetError::InvalidReturnLength {
+                message: "Calculated weight gradients resulted in vector with incorrect number of components".to_string(),
+                line: line!(), 
+                file: file!().to_string(),
+            })
+        }
+
+        Ok(weight_gradients)
     }
 
     // This function receives two vectors consisting of the amount by which we need to adjust each weight and bias in this layer

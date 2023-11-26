@@ -6,6 +6,7 @@ mod layer;
 mod utility;
 mod constants;
 mod experience;
+mod errors;
 
 use crate::experience::Experience;
 use crate::neural_net::NeuralNet;
@@ -45,5 +46,5 @@ fn main() {
 
     let mut nn = NeuralNet::new(num_layers, layer_layout, 0.5);
 
-    nn.train(training_data, 10, 10);
+    nn.train(training_data, 10, 10).unwrap();
 }
