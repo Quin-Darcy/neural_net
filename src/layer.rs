@@ -157,7 +157,24 @@ impl Layer {
     }
 
     // This function receives two vectors consisting of the amount by which we need to adjust each weight and bias in this layer
-    pub fn update(&mut self, weight_adjustments: &[f32], bias_adjustments: &[f32]) {
+    pub fn update(&mut self, weight_adjustments: &[f32], bias_adjustments: &[f32]) -> Result<(), NeuralNetError> {
+        // Check that the weight adjustments and bias adjustments have the correct length 
+        if weight_adjustments.len() != self.num_inputs * self.num_neurons {
+            return Err(NeuralNetError::InvalidDimensions {
+                message: "update received weight_adjustments vector of incorrect size".to_string(),
+                line: line!(),
+                file: file!().to_string(),
+            })
+        }
+
+        if bias_adjustments.len() != self.num_neurons {
+            return Err(NeuralNetError::InvalidDimensions {
+                message: "update received bias_adjustments vector of incorrect size".to_string(),
+                line: line!(),
+                file: file!().to_string(),
+            })
+        }
+
         for (weight, adjustment) in self.weights.iter_mut().zip(weight_adjustments.iter()) {
             *weight -= adjustment;
         }
@@ -165,5 +182,7 @@ impl Layer {
         for (bias, adjustment) in self.biases.iter_mut().zip(bias_adjustments.iter()) {
             *bias -= adjustment;
         }
+
+        Ok(())
     }
 }

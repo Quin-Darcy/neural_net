@@ -243,6 +243,102 @@ mod tests {
         assert_eq!(sigmoid_vec(&inputs2).unwrap(), expected_outputs2);
 
         // Test error case
-        assert!(matches!(sigmoid_vec(&inputs3), Err(NeuralNetError::EmptyVector)));
+        assert!(matches!(sigmoid_vec(&inputs3), Err(NeuralNetError::EmptyVector{message, line: _, file: _})
+            if message == "sigmoid_vec received empty inputs vector"
+        ));
+    }
+
+    #[test]
+    fn test_sigmoid_derivative_vec() {
+        let inputs1: Vec<f32> = vec![0.0f32, 2.0, -2.0];
+        let inputs2: Vec<f32> = vec![0.01];
+        let inputs3: Vec<f32> = Vec::new();
+
+        let expected_outputs1: Vec<f32> = inputs1.iter().map(|&x| {let s = sigmoid(x); s * (1.0 - s)}).collect::<Vec<f32>>();
+        let expected_outputs2: Vec<f32> = inputs2.iter().map(|&x| {let s = sigmoid(x); s * (1.0 - s)}).collect::<Vec<f32>>();
+
+        // Test successful cases
+        assert_eq!(sigmoid_derivative_vec(&inputs1).unwrap(), expected_outputs1);
+        assert_eq!(sigmoid_derivative_vec(&inputs2).unwrap(), expected_outputs2);
+
+        // Test error case
+        assert!(matches!(sigmoid_derivative_vec(&inputs3), Err(NeuralNetError::EmptyVector{message, line: _, file: _})
+            if message == "sigmoid_derivative_vec received empty inputs vector"
+        ));
+    }
+
+    #[test]
+    fn test_sub_vec() {
+        let input1_v1: Vec<f32> = vec![1.2];
+        let input1_v2: Vec<f32> = vec![0.1];
+
+        let input2_v1: Vec<f32> = vec![3.5, 944.2, 13.0, -0.0001, 0.55234];
+        let input2_v2: Vec<f32> = vec![44.0098, 0.0, -1200.03404, 3.3, 1.01];
+
+        let error_vec: Vec<f32> = Vec::new();
+
+        let mut expected_output1: Vec<f32> = Vec::with_capacity(input1_v1.len());
+        for (&a, &b) in input1_v1.iter().zip(input1_v2.iter()) {
+            expected_output1.push(a - b);
+        }
+
+        let mut expected_output2: Vec<f32> = Vec::with_capacity(input2_v1.len());
+        for (&a, &b) in input2_v1.iter().zip(input2_v2.iter()) {
+            expected_output2.push(a - b);
+        }
+
+        // Test successful cases
+        assert_eq!(sub_vec(&input1_v1, &input1_v2).unwrap(), expected_output1);
+        assert_eq!(sub_vec(&input2_v1, &input2_v2).unwrap(), expected_output2);
+
+        // Test error cases
+        assert!(matches!(sub_vec(&error_vec, &input2_v1), Err(NeuralNetError::EmptyVector{message, line: _, file: _})
+            if message == "sub_vec received one or two empty vectors"
+        ));
+
+        assert!(matches!(sub_vec(&input2_v1, &error_vec), Err(NeuralNetError::EmptyVector{message, line: _, file: _})
+            if message == "sub_vec received one or two empty vectors"
+        ));
+
+        assert!(matches!(sub_vec(&error_vec, &error_vec), Err(NeuralNetError::EmptyVector{message, line: _, file: _})
+            if message == "sub_vec received one or two empty vectors"
+        ));
+
+        assert!(matches!(sub_vec(&input1_v1, &input2_v1), Err(NeuralNetError::InvalidDimensions{message, line: _, file: _})
+            if message == "sub_vec received vectors of different sizes"
+        ));
+
     }
 }
+
+/*
+pub fn sub_vec(vec1: &[f32], vec2: &[f32]) -> Result<Vec<f32>, NeuralNetError> {
+    // Check if either vector is empty
+    if vec1.is_empty() || vec2.is_empty() {
+        return Err(NeuralNetError::EmptyVector {
+            message: "sub_vec received one or two empty vectors".to_string(),
+            line: line!(),
+            file: file!().to_string(),
+        })
+    }
+
+    // Ensure vec1 and vec2 are of the same length to avoid panics
+    if vec1.len() != vec2.len() {
+        return Err(NeuralNetError::InvalidDimensions {
+            message: "sub_vec received vectors of different sizes".to_string(),
+            line: line!(),
+            file: file!().to_string(),
+        })
+    }
+
+    // Create a new vector with the same capacity as vec1
+    let mut result = Vec::with_capacity(vec1.len());
+
+    // Iterate over the elements of vec1 and vec2, subtract and push to result
+    for (&a, &b) in vec1.iter().zip(vec2.iter()) {
+        result.push(a - b);
+    }
+
+    Ok(result)
+}
+*/

@@ -143,7 +143,7 @@ impl NeuralNet {
                 .collect::<Vec<f32>>();
 
             // Update the weights and biases of layer i using the averaged gradients of the ith layer's weights and biases
-            self.layers[i].update(&scaled_weights_gradients, &scaled_biases_gradients);
+            self.layers[i].update(&scaled_weights_gradients, &scaled_biases_gradients)?;
         }
 
         Ok(batch_loss)
