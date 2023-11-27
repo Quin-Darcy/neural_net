@@ -1,5 +1,4 @@
 use bitvec::prelude::*;
-use rand::Rng;
 
 mod neural_net;
 mod layer;
@@ -10,6 +9,7 @@ mod errors;
 
 use crate::experience::Experience;
 use crate::neural_net::NeuralNet;
+use crate::constants::*;
 
 
 fn create_xor_data() -> Vec<Experience> {
@@ -22,11 +22,12 @@ fn create_xor_data() -> Vec<Experience> {
 }
 
 fn main() {
+    let layer_layout = LAYER_LAYOUT;
+    let num_layers = layer_layout.len();
+    let learning_rate = LEARNING_RATE;
+    let epochs = EPOCHS;
+
     let training_data = create_xor_data();
-    let num_layers = 3; // input, one hidden, output
-    let layer_layout = vec![2, 4, 1]; // 2 inputs, 2 neurons in hidden layer, 1 output
-    let learning_rate = 0.1;
-    let epochs = 10000;
 
     let mut neural_net = NeuralNet::new(num_layers, layer_layout, learning_rate);
 
