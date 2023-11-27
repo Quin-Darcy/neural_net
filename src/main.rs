@@ -22,7 +22,10 @@ fn create_xor_data() -> Vec<Experience> {
 }
 
 fn main() {
-    let layer_layout = LAYER_LAYOUT;
+    let layer_layout = vec![2, 5, 1];
+
+    assert_eq!(layer_layout.len(), NUM_LAYERS);
+
     let num_layers = layer_layout.len();
     let learning_rate = LEARNING_RATE;
     let epochs = EPOCHS;
