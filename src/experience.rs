@@ -2,10 +2,10 @@ use bitvec::prelude::*;
 
 #[derive(Clone)]
 pub struct Experience {
-    state: BitVec,
+    pub state: BitVec,
     // action: usize, // Represents index in state bitvec to toggle on/off
     // reward: f32,
-    new_state: BitVec,
+    pub new_state: BitVec,
 }
 
 impl Experience {

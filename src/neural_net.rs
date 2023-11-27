@@ -21,8 +21,7 @@ impl NeuralNet {
             // Layer is initialized with num_inputs (number of neurons in previous layer), 
             // num_outputs (number of neurons in current layer), and its layer index
             if i == 0 {
-                // If it is the input layer, it has no inputs since there is no layer before it
-                layers.push(Layer::new(0, layer_layout[i], i));
+                layers.push(Layer::new(layer_layout[i], layer_layout[i], i));
             } else {
                 layers.push(Layer::new(layer_layout[i-1], layer_layout[i], i));
             }
@@ -73,13 +72,11 @@ impl NeuralNet {
         // Train the neural net for the specified number of epochs
         let training_data_len = training_data.len();
         let mut cost_sum = 0.0;
-        for i in 0..epochs {
-            println!("EPOCH {}", i);
+        for _ in 0..epochs {
             for batch in batches.iter_mut() {
                 cost_sum += self.train_on_batch(batch)?;
             }
             self.average_cost = cost_sum / training_data_len as f32;
-            println!("    Average Cost: {}", self.average_cost);
             cost_sum = 0.0;
         }
 
@@ -149,7 +146,7 @@ impl NeuralNet {
         Ok(batch_loss)
     }
 
-    fn feed_forward(&mut self, data: &mut Experience) -> Result<Vec<f32>, NeuralNetError> {
+    pub fn feed_forward(&mut self, data: &mut Experience) -> Result<Vec<f32>, NeuralNetError> {
         // Convert the Experience's 'state' member into a Vec<f32> so that it can be consumed by the neural net
         let input = data.convert_state_to_f32_vec();
 
@@ -165,7 +162,7 @@ impl NeuralNet {
         // Check that the length of the input vector matches the number of neurons in the input layer
         if input.len() != self.layer_layout[0] {
             return Err(NeuralNetError::InvalidDimensions {
-                message: "feed_forward received Experience with invalid state length".to_string(),
+                message: format!("feed_forward received Experience with invalid state length. Expected: {}, Received: {}", self.layer_layout[0], input.len()),
                 line: line!(),
                 file: file!().to_string(),
             });
@@ -234,11 +231,11 @@ impl NeuralNet {
             layer_weight_gradients = self.layers[i].calculate_weight_gradients(&previous_layer_output)?;
 
             // Add each component of the layer_bias_gradients and layer_weights_gradients to the total_bias_gradients and total_weight_gradients
-            for (a, &b) in total_bias_gradients[i].iter_mut().zip(layer_bias_gradients.iter()) {
+            for (a, &b) in total_bias_gradients[i-1].iter_mut().zip(layer_bias_gradients.iter()) {
                 *a += b;
             }
 
-            for (a, &b) in total_weight_gradients[i].iter_mut().zip(layer_weight_gradients.iter()) {
+            for (a, &b) in total_weight_gradients[i-1].iter_mut().zip(layer_weight_gradients.iter()) {
                 *a += b;
             }
         }
@@ -272,4 +269,22 @@ impl NeuralNet {
             .map(|(&a, &p)| (a - p).powi(2))
             .sum::<f32>() / 2.0)
     }
+}
+
+
+#[cfg(test)]
+mod neural_net_tests {
+    use super::*;
+
+    #[test]
+    fn test_neural_net_new() {
+        let neural_net = NeuralNet::new(3, vec![2, 3, 1], 0.01);
+
+        assert_eq!(neural_net.num_layers, 3);
+        assert_eq!(neural_net.layer_layout, vec![2, 3, 1]);
+        assert_eq!(neural_net.learning_rate, 0.01);
+        assert_eq!(neural_net.layers.len(), 3);
+    }
+
+    // TODO: Add more unit tests
 }

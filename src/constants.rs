@@ -1,1 +1,1 @@
-pub const NUM_LAYERS: usize = 10;
+pub const NUM_LAYERS: usize = 3;

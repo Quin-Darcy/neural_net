@@ -49,7 +49,7 @@ impl Layer {
         // Check for mismatched input lengths
         if input.len() != self.num_inputs {
             return Err(NeuralNetError::InvalidDimensions{
-                message: "feed_forward received input with invalid length".to_string(),
+                message: format!("feed_forward received input with invalid length. Expected: {}, Received: {}", self.num_inputs, input.len()),
                 line: line!(),
                 file: file!().to_string(),
             });
@@ -185,4 +185,57 @@ impl Layer {
 
         Ok(())
     }
+}
+
+
+#[cfg(test)]
+mod layer_tests {
+    use super::*;
+
+    #[test]
+    fn test_layer_new() {
+        let layer = Layer::new(3, 2, 1);
+        
+        assert_eq!(layer.num_neurons, 2);
+        assert_eq!(layer.num_inputs, 3);
+        assert_eq!(layer.layer_index, 1);
+        assert_eq!(layer.biases.len(), 2);
+        assert_eq!(layer.weights.len(), 3 * 2); // input_size * output_size
+    }
+
+    #[test]
+    fn test_layer_feed_forward() {
+        let mut layer = Layer::new(3, 2, 0);
+        let input = vec![0.5, 0.3, -0.2];
+    
+        // Normal case
+        match layer.feed_forward(&input) {
+            Ok(output) => assert_eq!(output.len(), 2),
+            Err(_) => panic!("feed_forward failed on valid input"),
+        }
+    
+        // Mismatched input length
+        let invalid_input = vec![0.5, 0.3];
+        assert!(matches!(layer.feed_forward(&invalid_input), Err(NeuralNetError::InvalidDimensions{..})));
+    }
+
+    #[test]
+    fn test_layer_calculate_neuron_errors() {
+        let mut layer = Layer::new(3, 2, 1);
+        let target = vec![0.1, 0.2];
+        let next_layer_weights = vec![0.2; 4]; // Assuming next layer also has 2 neurons
+        let next_layer_error_terms = vec![0.05; 2];
+    
+        // Normal case
+        match layer.calculate_neuron_errors(&target, &next_layer_weights, &next_layer_error_terms) {
+            Ok(errors) => assert_eq!(errors.len(), 2),
+            Err(_) => panic!("calculate_neuron_errors failed on valid input"),
+        }
+    
+        // Error case for empty input
+        assert!(matches!(layer.calculate_neuron_errors(&[], &next_layer_weights, &next_layer_error_terms), Err(NeuralNetError::EmptyVector{..})));
+    }
+
+    // TODO: Add more unit tests
+    
 }
